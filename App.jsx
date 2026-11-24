@@ -2,15 +2,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard, BedDouble, CalendarCheck, Users, LogIn, ConciergeBell,
   Sparkles, Wrench, UserCog, Wallet, BarChart3, History, Settings,
-  Search, Bell, Plus, X, CheckCircle2, AlertTriangle, Printer,
-  Filter, RefreshCw, ShieldCheck, Building2, TrendingUp, DollarSign
+  Search, Bell, Plus, X, Printer, RefreshCw, ShieldCheck, Building2
 } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
-  PieChart, Pie, Cell, LineChart, Line, Legend
+  PieChart, Pie, Cell, Legend
 } from 'recharts';
 
-// ==================== CONSTANTS & HELPERS ====================
 const formatVND = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val || 0);
 
 const ROOM_TYPES = {
@@ -67,7 +65,6 @@ function generateInitial216Rooms() {
         const num = `${floor}${String(seq).padStart(2, '0')}`;
         let status = 'Available';
         let hkStatus = 'Inspected';
-        // Tạo dữ liệu mẫu thực tế cho một số phòng
         if (['101', '102', '205', '310', '401', '450'].includes(num)) {
           status = 'Occupied';
           hkStatus = 'Clean';
@@ -131,13 +128,11 @@ const INITIAL_MAINTENANCE = [
   { id: 'MNT-002', roomNumber: '354', title: 'Rò rỉ vòi nước bồn rửa', priority: 'Trung bình', status: 'Mở', cost: 200000, reportedAt: todayStr },
 ];
 
-// ==================== MAIN APPLICATION ====================
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [currentRole, setCurrentRole] = useState('Admin');
   const [globalSearch, setGlobalSearch] = useState('');
 
-  // Core States with LocalStorage persistence
   const [rooms, setRooms] = useState(() => {
     const saved = localStorage.getItem('pms216_rooms');
     return saved ? JSON.parse(saved) : generateInitial216Rooms();
@@ -146,42 +141,35 @@ export default function App() {
     const saved = localStorage.getItem('pms216_bookings');
     return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
   });
-  const [guests, setGuests] = useState(() => {
-    const saved = localStorage.getItem('pms216_guests');
-    return saved ? JSON.parse(saved) : INITIAL_GUESTS;
-  });
-  const [services, setServices] = useState(INITIAL_SERVICES);
+  const [guests] = useState(INITIAL_GUESTS);
+  const [services] = useState(INITIAL_SERVICES);
   const [payments, setPayments] = useState(INITIAL_PAYMENTS);
   const [maintenance, setMaintenance] = useState(INITIAL_MAINTENANCE);
-  const [employees, setEmployees] = useState(INITIAL_EMPLOYEES);
+  const [employees] = useState(INITIAL_EMPLOYEES);
   const [auditLogs, setAuditLogs] = useState([
     { id: 1, user: 'Admin', time: new Date().toLocaleString('vi-VN'), action: 'INIT_SYSTEM', target: '216 Phòng', detail: 'Khởi tạo hệ thống HOTEL PMS 216' }
   ]);
-  const [notifications, setNotifications] = useState([
+  const [notifications] = useState([
     { id: 1, title: 'Khách sắp Check-in', message: 'Booking BK-2026-0003 (Phòng 405) dự kiến nhận phòng hôm nay.', read: false },
     { id: 2, title: 'Phòng cần bảo trì', message: 'Phòng 154 và 354 đang có yêu cầu kỹ thuật.', read: false },
   ]);
   const [showNotif, setShowNotif] = useState(false);
 
-  // Room Map Filters & Modal
   const [floorFilter, setFloorFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedRoom, setSelectedRoom] = useState(null);
 
-  // Booking Modal
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [newBooking, setNewBooking] = useState({
     guestName: '', phone: '', roomNumber: '103', checkIn: todayStr, checkOut: addDays(2),
     adults: 2, children: 0, deposit: 0, source: 'Walk-in'
   });
 
-  // Checkout Invoice Modal
   const [checkoutBooking, setCheckoutBooking] = useState(null);
   const [checkoutSurcharge, setCheckoutSurcharge] = useState(0);
   const [checkoutMethod, setCheckoutMethod] = useState('Chuyển khoản');
 
-  // Service Order Modal
   const [serviceOrderRoom, setServiceOrderRoom] = useState('');
   const [serviceOrderId, setServiceOrderId] = useState('DV-01');
   const [serviceOrderQty, setServiceOrderQty] = useState(1);
@@ -194,10 +182,6 @@ export default function App() {
     localStorage.setItem('pms216_bookings', JSON.stringify(bookings));
   }, [bookings]);
 
-  useEffect(() => {
-    localStorage.setItem('pms216_guests', JSON.stringify(guests));
-  }, [guests]);
-
   const addAuditLog = (action, target, detail) => {
     setAuditLogs(prev => [{
       id: Date.now(),
@@ -209,9 +193,8 @@ export default function App() {
     }, ...prev]);
   };
 
-  // ==================== COMPUTED METRICS ====================
   const stats = useMemo(() => {
-    const total = rooms.length; // Always 216
+    const total = rooms.length;
     const occupied = rooms.filter(r => r.status === 'Occupied').length;
     const available = rooms.filter(r => r.status === 'Available' && r.hkStatus !== 'Dirty').length;
     const reserved = rooms.filter(r => r.status === 'Reserved').length;
@@ -242,14 +225,12 @@ export default function App() {
     { day: 'CN', revenue: Math.max(stats.todayRevenue, 15000000) },
   ];
 
-  // ==================== BUSINESS LOGIC ====================
   const handleCreateBooking = (e) => {
     e.preventDefault();
     if (newBooking.checkOut <= newBooking.checkIn) {
       alert('Lỗi nghiệp vụ: Ngày trả phòng phải sau ngày nhận phòng!');
       return;
     }
-    // Check overlap
     const overlap = bookings.find(b =>
       b.roomNumber === newBooking.roomNumber &&
       !['Cancelled', 'Checked-out'].includes(b.status) &&
@@ -369,7 +350,6 @@ export default function App() {
     addAuditLog('UPDATE_ROOM', `Phòng ${roomNumber}`, logMsg);
   };
 
-  // ==================== ROOM COLOR HELPER ====================
   const getRoomCardColor = (room) => {
     if (room.status === 'Maintenance' || room.status === 'Out of Order') return 'bg-slate-200 border-slate-400 text-slate-700';
     if (room.status === 'Occupied') return 'bg-rose-50 border-rose-400 text-rose-800';
@@ -407,7 +387,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-900 overflow-hidden font-sans">
-      {/* SIDEBAR */}
       <aside className="w-64 bg-[#0f172a] text-slate-300 flex flex-col shrink-0 no-print">
         <div className="p-5 flex items-center gap-3 border-b border-slate-800">
           <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
@@ -441,9 +420,7 @@ export default function App() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* HEADER */}
         <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 no-print">
           <div className="flex items-center gap-3 w-96">
             <Search className="w-4 h-4 text-slate-400" />
@@ -491,9 +468,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* WORKSPACE */}
         <main className="flex-1 overflow-y-auto p-6">
-          {/* 1. DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
@@ -562,7 +537,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 2. ROOM MAP (216 ROOMS) */}
           {activeTab === 'rooms' && (
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200">
@@ -614,7 +588,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 3. BOOKINGS */}
           {activeTab === 'bookings' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -672,11 +645,10 @@ export default function App() {
             </div>
           )}
 
-          {/* 4. CHECK-IN / CHECK-OUT */}
           {activeTab === 'checkin' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-5 rounded-xl border border-slate-200">
-                <h3 className="font-bold text-lg mb-4 text-amber-700">Chờ nhận phòng (Arriving / Confirmed)</h3>
+                <h3 className="font-bold text-lg mb-4 text-amber-700">Chờ nhận phòng (Confirmed)</h3>
                 <div className="space-y-3">
                   {bookings.filter(b => b.status === 'Confirmed').map(b => (
                     <div key={b.id} className="p-4 border border-slate-200 rounded-lg flex justify-between items-center">
@@ -706,7 +678,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 5. GUESTS */}
           {activeTab === 'guests' && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-xl font-bold mb-4">Hồ sơ khách hàng</h2>
@@ -732,7 +703,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 6. SERVICES */}
           {activeTab === 'services' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
@@ -771,7 +741,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 7. HOUSEKEEPING */}
           {activeTab === 'housekeeping' && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-xl font-bold mb-4">Quản lý Buồng phòng (Housekeeping)</h2>
@@ -796,7 +765,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 8. MAINTENANCE */}
           {activeTab === 'maintenance' && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-xl font-bold mb-4">Quản lý Bảo trì kỹ thuật</h2>
@@ -828,7 +796,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 9. FINANCE */}
           {activeTab === 'finance' && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-xl font-bold mb-4">Quản lý Tài chính & Giao dịch thanh toán</h2>
@@ -853,7 +820,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 10. REPORTS */}
           {activeTab === 'reports' && (
             <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
               <div className="flex justify-between items-center">
@@ -870,7 +836,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 11. EMPLOYEES & RBAC */}
           {activeTab === 'employees' && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-xl font-bold mb-4">Quản lý Nhân sự & Phân quyền (RBAC)</h2>
@@ -892,7 +857,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 12. AUDIT LOG */}
           {activeTab === 'audit' && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-xl font-bold mb-4">Nhật ký hoạt động (Audit Log - Bất biến)</h2>
@@ -910,7 +874,6 @@ export default function App() {
             </div>
           )}
 
-          {/* 13. SETTINGS */}
           {activeTab === 'settings' && (
             <div className="bg-white rounded-xl border border-slate-200 p-6 max-w-2xl space-y-4">
               <h2 className="text-xl font-bold">Cài đặt hệ thống HOTEL PMS 216</h2>
@@ -928,7 +891,6 @@ export default function App() {
         </main>
       </div>
 
-      {/* ROOM DETAIL MODAL */}
       {selectedRoom && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
@@ -954,7 +916,6 @@ export default function App() {
         </div>
       )}
 
-      {/* CREATE BOOKING MODAL */}
       {showBookingModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <form onSubmit={handleCreateBooking} className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
@@ -985,7 +946,6 @@ export default function App() {
         </div>
       )}
 
-      {/* CHECK-OUT INVOICE MODAL */}
       {checkoutBooking && (() => {
         const nights = calculateNights(checkoutBooking.checkIn, checkoutBooking.checkOut);
         const roomTotal = nights * checkoutBooking.pricePerNight;
